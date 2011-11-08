@@ -13,7 +13,7 @@ exit_handler()
 }
 
 if [ -z "$DEBUG" ]; then
-	TM=${TMPDIR}tmpdir.$$
+	TM=${TMPDIR}tmpdir.$$.$RANDOM
 	(umask 077 && mkdir $TM)
 	trap exit_handler HUP PIPE INT QUIT TERM EXIT
 	WGET_OPTIONS=--quiet
