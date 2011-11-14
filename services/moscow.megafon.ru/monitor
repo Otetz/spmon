@@ -22,7 +22,7 @@ megafon()
 	let ATTEMPT++
 
 	# Manual test insertion for processing of returning wrong balance (sometimes returns 0, while the actual balance has not equal zero)
-	if [ $ATTEMPT -eq 1 ]; then STRVAL=$ZERO_VALUE; fi
+	#if [ $ATTEMPT -eq 1 ]; then STRVAL=$ZERO_VALUE; fi
 
 	# Repeat if unsuccessfully, maximum 5 times
 	if [ $ATTEMPT -lt 5 ] && [ "$STRVAL" == "$ZERO_VALUE" ]; then megafon; fi
