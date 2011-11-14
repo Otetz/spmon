@@ -29,4 +29,6 @@ megafon()
 }
 
 megafon
+
+if [ "$STRVAL" == "$ZERO_VALUE" ]; then STRVAL=""; fi
 echo $STRVAL
