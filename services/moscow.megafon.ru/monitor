@@ -12,8 +12,18 @@ ZERO_VALUE=$(echo "scale=2; 0.0" | bc)
 ATTEMPT=0
 LOG=/var/log/zabbix/zabbix_server.log
 
-echo  >> $LOG
+echo >> $LOG
 echo `date "+TIME: %Y-%m-%d %H:%M:%S"` >> $LOG
+
+# Take the input data from command line arguments
+# We use the default values ​​if no arguments are given
+# If exactly two arguments, the first is login, and the second - the password
+if [ $# -le 1 ]; then LOGIN='111'; PASSWORD='222';
+else 
+	if [ $# -eq 2 ]; then LOGIN=$1; PASSWORD=$2; fi
+	if [ $# -eq 3 ]; then LOGIN=$2; PASSWORD=$3; fi
+fi
+echo "LOGIN='$LOGIN'; PASSWORD='$PASSWORD'" >> $LOG
 
 megafon()
 {
