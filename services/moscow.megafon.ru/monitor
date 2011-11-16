@@ -10,6 +10,10 @@ UA='Mozilla/5.0 (Linux; U; Android 2.2; en-us; Desire_A8181 Build/FRF91) AppleWe
 STRVAL=""
 ZERO_VALUE=$(echo "scale=2; 0.0" | bc)
 ATTEMPT=0
+LOG=/var/log/zabbix/zabbix_server.log
+
+echo  >> $LOG
+echo `date "+TIME: %Y-%m-%d %H:%M:%S"` >> $LOG
 
 megafon()
 {
@@ -21,6 +25,9 @@ megafon()
 	STRVAL=`echo "scale=2; $(sed -ne '/<span id="statusbalance">/ { s,^<span id="statusbalance">.*: \([0-9.-]*\) .*$,\1,; p; }' <$TM/2.html)" | bc`
 	let ATTEMPT++
 
+	echo "ATTEMPT = $ATTEMPT" >> $LOG
+	echo "STRVAL  = $STRVAL" >> $LOG
+
 	# Manual test insertion for processing of returning wrong balance (sometimes returns 0, while the actual balance has not equal zero)
 	#if [ $ATTEMPT -eq 1 ]; then STRVAL=$ZERO_VALUE; fi
 
@@ -31,4 +38,5 @@ megafon()
 megafon
 
 if [ "$STRVAL" == "$ZERO_VALUE" ]; then STRVAL=""; fi
+echo "FINAL STRVAL = $STRVAL" >> $LOG
 echo $STRVAL
