@@ -7,46 +7,15 @@ OLDPATH=$PATH; PATH=".:..:$(dirname $0):$PATH"; . _spmon_lib; PATH=$OLDPATH
 
 UA='Mozilla/5.0 (Linux; U; Android 2.2; en-us; Desire_A8181 Build/FRF91) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1'
 
-STRVAL=""
-ZERO_VALUE=$(echo "scale=2; 0.0" | bc)
-ATTEMPT=0
-LOG=/var/log/zabbix/zabbix_server.log
+MONITOR_REQS=(
+	"URL=https://ihelper.mts.ru/SELFCAREPDA/Security.mvc/LogOn?returnLink=http%3A%2F%2Fihelper.mts.ru%3A8083%2FSELFCAREPDA%2FHome.mvc"
+	"URL=https://ihelper.mts.ru/SELFCAREPDA/Security.mvc/LogOn?returnLink=http%3A%2F%2Fihelper.mts.ru%3A8083%2FSELFCAREPDA%2FHome.mvc ARGS=--post-data=username=$LOGIN&password=$PASSWORD"
+)
 
-echo >> $LOG
-echo `date "+TIME: %Y-%m-%d %H:%M:%S"` >> $LOG
-
-# Take the input data from command line arguments
-# We use the default values ​​if no arguments are given
-# If exactly two arguments, the first is login, and the second - the password
-if [ $# -le 1 ]; then LOGIN='111'; PASSWORD='222';
-else 
-	if [ $# -eq 2 ]; then LOGIN=$1; PASSWORD=$2; fi
-	if [ $# -eq 3 ]; then LOGIN=$2; PASSWORD=$3; fi
-fi
-echo "LOGIN='$LOGIN'; PASSWORD='$PASSWORD'" >> $LOG
-
-mts()
+findstring()
 {
-	request -O $TM/1.html https://ihelper.mts.ru/SELFCAREPDA/Security.mvc/LogOn?returnLink=http%3A%2F%2Fihelper.mts.ru%3A8083%2FSELFCAREPDA%2FHome.mvc
-	request -O $TM/2.html --post-data="username=$LOGIN&password=$PASSWORD" https://ihelper.mts.ru/SELFCAREPDA/Security.mvc/LogOn?returnLink=http%3A%2F%2Fihelper.mts.ru%3A8083%2FSELFCAREPDA%2FHome.mvc
-
 	# <br/>Баланс: <strong><strong>123.45</strong> руб.</strong>
-
-	STRVAL=`echo "scale=2; $(sed -ne '/<br\/>Баланс:/ { s,.*>\([0-9.]*\)</.*$,\1,; p; }' <$TM/2.html)" | bc`
-	let ATTEMPT++
-
-	echo "ATTEMPT = $ATTEMPT" >> $LOG
-	echo "STRVAL  = $STRVAL" >> $LOG
-
-	# Manual test insertion for processing of returning wrong balance (sometimes returns 0, while the actual balance has not equal zero)
-	#if [ $ATTEMPT -eq 1 ]; then STRVAL=$ZERO_VALUE; fi
-
-	# Repeat if unsuccessfully, maximum 5 times
-	if [ $ATTEMPT -lt 5 ] && [ "$STRVAL" == "$ZERO_VALUE" ]; then mts; fi
+	echo "$(sed -ne '/<br\/>Баланс:/ { s,.*>\([0-9.]*\)</.*$,\1,; p; }' <$1)"
 }
 
-mts
-
-if [ "$STRVAL" == "$ZERO_VALUE" ]; then STRVAL=""; fi
-echo "FINAL STRVAL = $STRVAL" >> $LOG
-echo $STRVAL
+monitor
