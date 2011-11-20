@@ -22,9 +22,28 @@ else
 	WGET_OPTIONS=
 fi
 
+STRVAL=""
+ZERO_VALUE=$(echo "scale=2; 0.0" | bc)
+ATTEMPT=0
+LOG=/var/log/zabbix/zabbix_server.log
+MONITOR_REQS=( )
+
+# Take the input data from command line arguments
+# We use the default values ​​if no arguments are given
+# If exactly two arguments, the first is login, and the second - the password
+if [ $# -le 1 ]; then LOGIN='111'; PASSWORD='222';
+else 
+	if [ $# -eq 2 ]; then LOGIN=$1; PASSWORD=$2; fi
+	if [ $# -eq 3 ]; then LOGIN=$2; PASSWORD=$3; fi
+fi
+echo "LOGIN='$LOGIN'; PASSWORD='$PASSWORD'" >> $LOG
+
 COOKIE_FILE="$TM/cookies.txt"
 
 UA='Mozilla/5.0 (X11; U; Linux x86_64; ru-RU) AppleWebKit/534.5 (KHTML, like Gecko) Chrome/6.0.482.0 Safari/534.5'
+
+echo >> $LOG
+echo `date "+TIME: %Y-%m-%d %H:%M:%S"` >> $LOG
 
 request()
 {
@@ -35,4 +54,37 @@ request()
 		--keep-session-cookies \
 		$WGET_OPTIONS \
 		$@
+}
+
+monitor()
+{
+	local i=0
+	while [ "$i" -lt ${#MONITOR_REQS[*]} ]
+	do
+		TEST="MONITOR_REQS[$i]"
+		local ${!TEST}
+		let i++
+		request -O $TM/$i.html --no-check-certificate $ARGS $URL
+	done
+
+	local VAL=`findstring $TM/${#MONITOR_REQS[*]}.html`
+	STRVAL=`echo "scale=2; $VAL" | bc`
+
+	let ATTEMPT++
+
+	echo "ATTEMPT = $ATTEMPT" >> $LOG
+	echo "STRVAL  = $STRVAL" >> $LOG
+
+	# Manual test insertion for processing of returning wrong balance (sometimes returns 0, while the actual balance has not equal zero)
+	#if [ $ATTEMPT -eq 1 ]; then STRVAL=$ZERO_VALUE; fi
+
+	# Repeat if unsuccessfully, maximum 5 times
+	if [ $ATTEMPT -lt 5 ] && [ "$STRVAL" == "$ZERO_VALUE" ]
+	then 
+		monitor
+	else
+		if [ "$STRVAL" == "$ZERO_VALUE" ]; then STRVAL=""; fi
+		echo "FINAL STRVAL = $STRVAL" >> $LOG
+		echo $STRVAL
+	fi
 }

@@ -7,46 +7,15 @@ OLDPATH=$PATH; PATH=".:..:$(dirname $0):$PATH"; . _spmon_lib; PATH=$OLDPATH
 
 UA='Mozilla/5.0 (Linux; U; Android 2.2; en-us; Desire_A8181 Build/FRF91) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1'
 
-STRVAL=""
-ZERO_VALUE=$(echo "scale=2; 0.0" | bc)
-ATTEMPT=0
-LOG=/var/log/zabbix/zabbix_server.log
+MONITOR_REQS=(
+	"URL=https://moscowsg.megafon.ru/ps/scc/mobile/"
+	"URL=https://moscowsg.megafon.ru/ps/scc/mobile/ ARGS=--post-data=MOBILE_MODE=AUTH&LOGIN=$LOGIN&PASSWORD=$PASSWORD"
+)
 
-echo >> $LOG
-echo `date "+TIME: %Y-%m-%d %H:%M:%S"` >> $LOG
-
-# Take the input data from command line arguments
-# We use the default values ​​if no arguments are given
-# If exactly two arguments, the first is login, and the second - the password
-if [ $# -le 1 ]; then LOGIN='111'; PASSWORD='222';
-else 
-	if [ $# -eq 2 ]; then LOGIN=$1; PASSWORD=$2; fi
-	if [ $# -eq 3 ]; then LOGIN=$2; PASSWORD=$3; fi
-fi
-echo "LOGIN='$LOGIN'; PASSWORD='$PASSWORD'" >> $LOG
-
-megafon()
+findstring()
 {
-	request -O $TM/1.html --no-check-certificate https://moscowsg.megafon.ru/
-	request -O $TM/2.html --no-check-certificate --post-data="MOBILE_MODE=AUTH&LOGIN=$LOGIN&PASSWORD=$PASSWORD" https://moscowsg.megafon.ru/ps/scc/mobile/
-
 	# <span id="statusbalance"><span class="balance_good">&#1058;&#1077;&#1082;&#1091;&#1097;&#1080;&#1081; &#1073;&#1072;&#1083;&#1072;&#1085;&#1089;: 123.45 &#1088;&#1091;&#1073;.</span></span>
-
-	STRVAL=`echo "scale=2; $(sed -ne '/<span id="statusbalance">/ { s,^<span id="statusbalance">.*: \([0-9.-]*\) .*$,\1,; p; }' <$TM/2.html)" | bc`
-	let ATTEMPT++
-
-	echo "ATTEMPT = $ATTEMPT" >> $LOG
-	echo "STRVAL  = $STRVAL" >> $LOG
-
-	# Manual test insertion for processing of returning wrong balance (sometimes returns 0, while the actual balance has not equal zero)
-	#if [ $ATTEMPT -eq 1 ]; then STRVAL=$ZERO_VALUE; fi
-
-	# Repeat if unsuccessfully, maximum 5 times
-	if [ $ATTEMPT -lt 5 ] && [ "$STRVAL" == "$ZERO_VALUE" ]; then megafon; fi
+	echo "$(sed -ne '/<span id="statusbalance">/ { s,^<span id="statusbalance">.*: \([0-9.-]*\) .*$,\1,; p; }' <$1)"
 }
 
-megafon
-
-if [ "$STRVAL" == "$ZERO_VALUE" ]; then STRVAL=""; fi
-echo "FINAL STRVAL = $STRVAL" >> $LOG
-echo $STRVAL
+monitor
