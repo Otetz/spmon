@@ -15,7 +15,7 @@ MONITOR_REQS=(
 findstring()
 {
 	# <span id="statusbalance"><span class="balance_good">&#1058;&#1077;&#1082;&#1091;&#1097;&#1080;&#1081; &#1073;&#1072;&#1083;&#1072;&#1085;&#1089;: 123.45 &#1088;&#1091;&#1073;.</span></span>
-	echo "$(sed -ne '/<span id="statusbalance">/ { s,^<span id="statusbalance">.*: \([0-9.-]*\) .*$,\1,; p; }' <$1)"
+	echo "$(sed -ne '/<span class="balance.*good">/ { s,^<span class="balance.*good">.*: \([0-9.-]*\) .*,\1,; p; }' <$1)"
 }
 
 monitor
