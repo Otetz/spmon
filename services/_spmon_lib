@@ -64,6 +64,7 @@ monitor()
 		TEST="MONITOR_REQS[$i]"
 		local ${!TEST}
 		let i++
+		echo "request -O $TM/$i.html --no-check-certificate $ARGS $URL" >> $LOG
 		request -O $TM/$i.html --no-check-certificate $ARGS $URL
 	done
 
